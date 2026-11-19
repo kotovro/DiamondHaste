@@ -1,0 +1,37 @@
+# Godot: imported cache and per-machine editor data
+.godot/
+/android/
+*.translation
+
+# Builds and exports
+/build/
+/export/
+*.pck
+*.zip
+
+# Executables and native libraries (not stored in git)
+*.exe
+*.dll
+*.so
+*.dylib
+*.pdb
+*.lib
+*.a
+
+# 3D models and source art (stored in S3 or similar, not in git).
+# Their .import files stay in git: they hold import settings and material mapping.
+*.glb
+*.gltf
+*.bin
+*.fbx
+*.obj
+*.blend
+*.blend1
+*.blend@
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="DiamondConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/diamond/diamond_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+max_durability = 100.0
+min_impact_speed = 3.5
+damage_per_speed = 8.0
+kill_height = -10.0
+pickup_radius = 1.6
+pass_radius = 2.5
+catch_radius = 1.2
+throw_speed = 7.0
+throw_lift = 3.0
+settle_speed = 0.3
+settle_time = 0.4
