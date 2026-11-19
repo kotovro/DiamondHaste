@@ -97,7 +97,10 @@
 
 ## Тесты
 
+- Фреймворк — **GdUnit4** (`addons/gdUnit4`, версия 5.1.1: последняя под Godot 4.4; ветка 6.x требует Godot 4.5+). Тест — `extends GdUnitTestSuite`, хуки `before`/`before_test`/`after_test`/`after`, проверки `assert_int/float/bool/str/array/vector(...)`, узлы — `add_child(auto_free(node))`.
+- Сигналы проверяются через `SignalLog` (`tests/support/`): сколько раз испущен и с какими аргументами, без ожидания кадров. Общие заготовки (пол, ожидание кадров физики) — `TestWorld`.
 - Каждый класс логики — тест `tests/unit/test_<имя>.gd`.
 - Поведение со сценой и физикой — `tests/integration/`.
 - Проверки содержимого (состав секций, конфиги препятствий, ключи локализации, таблица лицензий) — тоже тесты.
-- Запуск: `tools\run_tests.cmd` (импорт + все тесты + проверка ошибок скриптов). Изменение не готово, пока тесты не зелёные. Порядок работы с ветками — `AGENTS.md`.
+- Запуск: `tools\run_tests.cmd` (импорт + все тесты + проверка ошибок скриптов); один файл или папка — `tools\run_tests.cmd res://tests/unit/test_stamina.gd`. Отчёты — в `reports/` (не в git). Изменение не готово, пока тесты не зелёные. Порядок работы с ветками — `AGENTS.md`.
+- CI: `.github/workflows/tests.yml` гоняет те же тесты через `gdUnit4-action` на каждый push в `main`/`dev`/`feat/**` и на pull request.
