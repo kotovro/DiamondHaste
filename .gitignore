@@ -35,3 +35,6 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# GdUnit4 test reports
+/reports/
