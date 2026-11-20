@@ -202,6 +202,65 @@ func test_disarmed_ignores_touches() -> void:
 	assert_int(beam_signals.count("calmed")).override_failure_message("calmed — только если луч срабатывал").is_equal(0)
 
 
+# --- Проверки хоста в request_report_player_touch (plan.md, таблица RPC) ---------
+# Прямой вызов на хосте: get_remote_sender_id() = 0 → отправитель — свой id (1).
+
+func test_host_report_from_own_player_trips_with_sender_as_actor() -> void:
+	await _add_beam()
+	beam.request_report_player_touch(_beam_middle())
+	assert_int(beam_signals.count("tripped")).override_failure_message("отчёт владельца существующего персонажа засчитывается").is_equal(1)
+	var args := beam_signals.args("tripped")
+	assert_int(args[0]).is_equal(PLAYER)
+	assert_int(args[1]).override_failure_message("виновник — отправитель отчёта (персонаж «1»), а не кто-то из группы players").is_equal(1)
+
+
+func test_host_report_from_peer_without_player_ignored() -> void:
+	await _add_beam()
+	remove_child(own)
+	assert_bool(foreign.is_inside_tree()).override_failure_message("подготовка: в сцене только чужой персонаж «2»").is_true()
+	beam.request_report_player_touch(_beam_middle())
+	assert_int(beam_signals.count("tripped")) \
+		.override_failure_message("у отправителя (1) нет персонажа — отчёт не засчитывается, даже если есть персонаж «2»").is_equal(0)
+	assert_bool(beam.is_armed()).is_true()
+	assert_bool(beam.is_tripped()).is_false()
+	add_child(own)  # вне дерева узел считался бы сиротой
+
+
+func test_host_report_point_clamped_to_beam() -> void:
+	await _add_beam(true, Vector3(2.0, 0.0, -1.0), 3.5)
+	var segment := beam.get_beam_segment()
+	var axis := (segment[1] - segment[0]).normalized()
+	var middle := _beam_middle()
+
+	# Точка сбоку и выше середины луча → середина оси.
+	beam.request_report_player_touch(middle + Vector3(0.0, 2.0, 1.5))
+	assert_int(beam_signals.count("tripped")).override_failure_message("расстояние до луча хост не проверяет (К14)").is_equal(1)
+	assert_vector(beam_signals.args("tripped")[2]).override_failure_message("точка сбоку прижата к оси луча") \
+		.is_equal_approx(middle, Vector3.ONE * 0.001)
+
+	# Точка за концом луча → конец отрезка, а не продолжение прямой.
+	beam.set_armed(true)
+	beam.request_report_player_touch(segment[1] + axis * 3.0 + Vector3(0.0, -1.0, 0.5))
+	assert_int(beam_signals.count("tripped")).is_equal(2)
+	assert_vector(beam_signals.args("tripped")[2]).override_failure_message("точка за концом прижата к концу отрезка луча") \
+		.is_equal_approx(segment[1], Vector3.ONE * 0.001)
+
+
+func test_host_report_ignored_when_disarmed() -> void:
+	await _add_beam()
+	beam.set_armed(false)
+	beam.request_report_player_touch(_beam_middle())
+	assert_int(beam_signals.count("tripped")).override_failure_message("снятый с взвода луч не принимает отчёт (touch.counts)").is_equal(0)
+	assert_bool(beam.is_tripped()).is_false()
+
+
+func test_host_report_ignored_after_trip() -> void:
+	await _add_beam()
+	beam.request_report_player_touch(_beam_middle())
+	beam.request_report_player_touch(_beam_middle())
+	assert_int(beam_signals.count("tripped")).override_failure_message("второй отчёт до взвода не засчитывается (К12)").is_equal(1)
+
+
 # --- Помощники -----------------------------------------------------------------
 
 ## Луч на полу с копией конфига; узел и журнал сигналов — в beam / beam_signals.

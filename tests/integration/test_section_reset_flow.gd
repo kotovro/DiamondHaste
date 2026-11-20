@@ -239,6 +239,104 @@ func test_locked_player_ignores_move_and_jump() -> void:
 	assert_float(highest - start.y).override_failure_message("без блока персонаж прыгает").is_greater(0.3)
 
 
+# --- Подключившийся во время паузы: _apply_full_state (plan.md, таблица RPC) -----
+# Прямой вызов на этой машине — то, что выполняет подключившийся пир по rpc_id от хоста.
+
+func test_full_state_alarm_puts_section_into_alarm_like_event() -> void:
+	await _build()
+	section._apply_full_state(true, SectionReset.Cause.PLAYER_CAUGHT, 2)
+	# Те же наблюдаемые признаки, что после события тревоги (test_player_caught_resets_section).
+	assert_bool(section.is_alarm()).override_failure_message("подключившийся видит секцию в тревоге").is_true()
+	assert_int(section.rules.cause).override_failure_message("причина — как у хоста").is_equal(SectionReset.Cause.PLAYER_CAUGHT)
+	assert_int(section.rules.actor_id).override_failure_message("виновник — как у хоста").is_equal(2)
+	assert_bool(beam.is_armed()).override_failure_message("на паузе препятствия сняты с взвода").is_false()
+
+	await _enter_beam(own)
+	assert_int(beam_signals.count("tripped")).override_failure_message("во время переданной тревоги луч не срабатывает").is_equal(0)
+	section.report_caught(SectionReset.Cause.DIAMOND_DESTROYED, 0)
+	assert_int(section_signals.count("alarm_started")).override_failure_message("во время переданной тревоги новые причины отбрасываются (К12)").is_equal(0)
+	assert_int(section.rules.cause).override_failure_message("причина не перезаписана").is_equal(SectionReset.Cause.PLAYER_CAUGHT)
+
+	await TestWorld.physics_frames(self, ceili(TEST_RESET_DELAY * 2.0 * Engine.physics_ticks_per_second))
+	assert_int(section_signals.count("section_reset")).override_failure_message("сброс подключившемуся присылает хост; сам он паузу не отсчитывает").is_equal(0)
+	assert_bool(section.is_alarm()).is_true()
+
+	section._apply_section_reset()
+	assert_int(section_signals.count("section_reset")).is_equal(1)
+	assert_array(section_signals.args("section_reset")).is_equal([SECTION_ID])
+	assert_bool(section.is_alarm()).override_failure_message("после сброса от хоста секция снова ACTIVE").is_false()
+	assert_bool(beam.is_armed()).override_failure_message("после сброса от хоста луч взведён").is_true()
+
+	await TestWorld.physics_frames(self, TOUCH_FRAMES)  # сброс унёс персонажа из луча — пусть зона это увидит
+	await _enter_beam(own)
+	assert_int(section_signals.count("alarm_started")).override_failure_message("после сброса секция снова ловит").is_equal(1)
+	assert_array(section_signals.args("alarm_started")).is_equal([SectionReset.Cause.PLAYER_CAUGHT, 1])
+
+
+func test_full_state_keeps_diamond_cause_and_no_actor() -> void:
+	await _build()
+	section._apply_full_state(true, SectionReset.Cause.DIAMOND_DESTROYED, 0)
+	assert_bool(section.is_alarm()).is_true()
+	assert_int(section.rules.cause).is_equal(SectionReset.Cause.DIAMOND_DESTROYED)
+	assert_int(section.rules.actor_id).is_equal(0)
+	assert_bool(beam.is_armed()).is_false()
+
+
+func test_full_state_without_alarm_changes_nothing() -> void:
+	await _build()
+	section._apply_full_state(false, SectionReset.Cause.PLAYER_CAUGHT, 0)
+	assert_bool(section.is_alarm()).override_failure_message("без тревоги у хоста секция остаётся ACTIVE").is_false()
+	assert_bool(beam.is_armed()).is_true()
+	assert_int(section_signals.count("alarm_started")).is_equal(0)
+	assert_int(section_signals.count("section_reset")).is_equal(0)
+	await _enter_beam(own)
+	assert_int(section_signals.count("alarm_started")).override_failure_message("секция ловит как обычно").is_equal(1)
+
+
+# --- Поза поимки (review №1): наклоняется нереплицируемый Body/Pose ----------------
+
+func test_caught_pose_tilts_pose_not_replicated_body() -> void:
+	await _build()
+	var own_pose := own.pose.rotation
+	var own_body := own.body.rotation
+	var foreign_pose := foreign.pose.rotation
+	section.report_caught(SectionReset.Cause.PLAYER_CAUGHT, 1)
+	assert_int(section_signals.count("alarm_started")).override_failure_message("подготовка: тревога началась").is_equal(1)
+	assert_bool(own.pose.rotation.is_equal_approx(own_pose)).override_failure_message("у задевшего наклонена поза (Body/Pose)").is_false()
+	assert_vector(own.body.rotation).override_failure_message("Body:rotation (реплицируется синхронизатором) не трогается позой поимки") \
+		.is_equal_approx(own_body, Vector3.ONE * 0.0001)
+	assert_vector(foreign.pose.rotation).override_failure_message("у незадевшего поза прежняя") \
+		.is_equal_approx(foreign_pose, Vector3.ONE * 0.0001)
+
+	await _wait_for_reset()
+	assert_int(section_signals.count("section_reset")).override_failure_message("подготовка: сброс случился").is_equal(1)
+	assert_vector(own.pose.rotation).override_failure_message("на section_reset поза возвращается") \
+		.is_equal_approx(own_pose, Vector3.ONE * 0.0001)
+
+
+func test_caught_pose_of_foreign_culprit_shown_here() -> void:
+	await _build()
+	var foreign_pose := foreign.pose.rotation
+	var foreign_body := foreign.body.rotation
+	section.report_caught(SectionReset.Cause.PLAYER_CAUGHT, 2)
+	assert_bool(foreign.pose.rotation.is_equal_approx(foreign_pose)) \
+		.override_failure_message("позу чужого задевшего эта машина показывает сама, по событию").is_false()
+	assert_vector(foreign.body.rotation).override_failure_message("Body:rotation чужого персонажа не трогается") \
+		.is_equal_approx(foreign_body, Vector3.ONE * 0.0001)
+	await _wait_for_reset()
+	assert_vector(foreign.pose.rotation).is_equal_approx(foreign_pose, Vector3.ONE * 0.0001)
+
+
+func test_caught_pose_node_not_replicated() -> void:
+	var player := _spawn_player(1, ASIDE)
+	var sync := player.find_children("*", "MultiplayerSynchronizer", true, false)
+	assert_int(sync.size()).override_failure_message("подготовка: у персонажа один синхронизатор").is_equal(1)
+	var pose_path := str(player.get_path_to(player.pose))
+	for path: NodePath in (sync[0] as MultiplayerSynchronizer).replication_config.get_properties():
+		assert_bool(str(path).begins_with(pose_path)) \
+			.override_failure_message("%s реплицируется синхронизатором — поза поимки должна идти только событием" % path).is_false()
+
+
 # --- Сборка сцены ----------------------------------------------------------------
 
 ## Пол, точки появления, секция с лучом у начала координат, алмаз, персонажи «1» и «2».
