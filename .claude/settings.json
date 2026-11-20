@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Edit(/DESIGN.md)",
+      "Edit(/.claude/settings.json)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git push --force-with-lease *)",
+      "Bash(git push * main)",
+      "Bash(git push * dev)",
+      "Bash(gh pr merge * --admin*)"
+    ],
+    "ask": [
+      "Edit(/project.godot)",
+      "Edit(/ARCHITECTURE.md)",
+      "Edit(/docs/tech/00-index.md)",
+      "Edit(/docs/art/ASSET_POLICY.md)",
+      "Edit(/default_bus_layout.tres)",
+      "Edit(/data/**)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean *)",
+      "Bash(git branch -D *)"
+    ]
+  }
+}
