@@ -1,7 +1,7 @@
-# Validation: project import + all tests + script error scan in the log.
-# Usage: tools\run_tests.cmd [filter]
+# Validation: project import + all GdUnit4 tests + script error scan in the log.
+# Usage: tools\run_tests.cmd [res://path/to/test_file.gd or folder]   (default: res://tests)
 # Godot path can be overridden with the GODOT_BIN environment variable (GODOT also works).
-param([string]$Filter = "")
+param([string]$Target = "res://tests")
 
 $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -28,23 +28,23 @@ try {
         exit 1
     }
 
-    Write-Host "== Tests" -ForegroundColor Cyan
-    $runArgs = @("--headless", "--path", ".", "res://tests/run_tests.tscn")
-    if ($Filter) { $runArgs += @("--", "--filter", $Filter) }
+    Write-Host "== Tests ($Target)" -ForegroundColor Cyan
+    # -c: do not stop at the first failure, report all of them.
+    $runArgs = @("--headless", "--path", ".", "-s", "res://addons/gdUnit4/bin/GdUnitCmdTool.gd",
+                 "--ignoreHeadlessMode", "-c", "-a", $Target)
     $log = & $godot @runArgs 2>&1 | ForEach-Object { "$_" }
     $code = $LASTEXITCODE
-    $log | Where-Object { $_ -notmatch "^Godot Engine v" } | Write-Host
+    $log | Write-Host
 
-    # A runtime script error aborts the test function silently, so the log is scanned too.
-    $runtimeErrors = $log | Where-Object { $_ -match "SCRIPT ERROR|ERROR:" }
-    $resultOk = $log | Where-Object { $_ -match "^TEST_RESULT OK" }
-
+    # A runtime script error may abort a test function without failing it, so the log is scanned too.
+    $runtimeErrors = $log | Where-Object { $_ -match "SCRIPT ERROR|^\s*ERROR:" }
     if ($runtimeErrors) {
         Write-Host ""
         Write-Host "Errors in log:" -ForegroundColor Red
         $runtimeErrors | Write-Host -ForegroundColor Red
     }
-    if ($code -ne 0 -or -not $resultOk -or $runtimeErrors) {
+    # GdUnit4 exit codes: 0 ok, 100 failures, 101 orphan nodes (leaks), 103/104 setup problems.
+    if ($code -ne 0 -or $runtimeErrors) {
         Write-Host "VALIDATION FAILED (exit code $code)" -ForegroundColor Red
         exit 1
     }

@@ -1,0 +1,33 @@
+# Runs all GdUnit4 tests (tests/unit + tests/integration) on every push and pull request.
+# Same suite as tools\run_tests.cmd locally.
+name: Tests
+
+on:
+  push:
+    branches: [main, dev, "feat/**"]
+  pull_request:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+  checks: write   # test report as a check run
+  actions: read
+
+jobs:
+  gdunit4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # Models (.glb) are not stored in git. Until there is an asset storage
+      # (S3 or Git LFS), scenes that use them cannot load here and the related tests fail.
+      # The fetch step goes here.
+
+      - uses: godot-gdunit-labs/gdUnit4-action@v1
+        with:
+          godot-version: "4.4.1"
+          version: installed      # use addons/gdUnit4 from the repository (v5.1.1)
+          paths: res://tests
+          arguments: "-c"         # do not stop at the first failure
+          timeout: 10
