@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="LaserAudioConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/obstacles/laser_audio_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+hum_volume_db = -12.0
+hum_max_distance = 6.0
+hum_unit_size = 2.0
+zap_volume_db = 0.0
+zap_max_distance = 40.0

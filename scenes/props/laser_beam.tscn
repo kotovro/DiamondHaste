@@ -2,6 +2,10 @@
 
 [ext_resource type="Script" path="res://scripts/obstacles/laser_beam.gd" id="1_script"]
 [ext_resource type="Resource" path="res://data/laser_config.tres" id="2_config"]
+[ext_resource type="Script" path="res://scripts/obstacles/laser_audio.gd" id="3_audio_script"]
+[ext_resource type="Resource" path="res://data/laser_audio_config.tres" id="4_audio_config"]
+[ext_resource type="AudioStreamWAV" path="res://audio/sfx/laser/laser_hum_loop.wav" id="5_hum"]
+[ext_resource type="AudioStreamWAV" path="res://audio/sfx/laser/laser_tripped_01.wav" id="6_zap"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_beam"]
 top_radius = 0.025
@@ -65,3 +69,17 @@ unique_name_in_owner = true
 visible = false
 cast_shadow = 0
 mesh = SubResource("SphereMesh_spark")
+
+[node name="LaserAudio" type="Node3D" parent="."]
+script = ExtResource("3_audio_script")
+config = ExtResource("4_audio_config")
+
+[node name="Hum" type="AudioStreamPlayer3D" parent="LaserAudio"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+stream = ExtResource("5_hum")
+bus = &"SFX"
+
+[node name="Zap" type="AudioStreamPlayer3D" parent="LaserAudio"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+stream = ExtResource("6_zap")
+bus = &"SFX"
