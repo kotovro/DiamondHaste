@@ -20,9 +20,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Models (.glb) are not stored in git. Until there is an asset storage
-      # (S3 or Git LFS), scenes that use them cannot load here and the related tests fail.
-      # The fetch step goes here.
+      # Models are not stored in git: fetch the ones listed in assets.lock.json
+      # from Yandex Object Storage (read-only service account key in repo secrets).
+      - name: Fetch models
+        shell: pwsh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_S3_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_S3_SECRET }}
+        run: ./tools/fetch_assets.ps1 -Only assets
 
       - uses: godot-gdunit-labs/gdUnit4-action@v1
         with:
