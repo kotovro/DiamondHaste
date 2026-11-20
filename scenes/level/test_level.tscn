@@ -1,6 +1,9 @@
 [gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/props/diamond.tscn" id="1_diamond"]
+[ext_resource type="Script" path="res://scripts/level/section_root.gd" id="2_section_root"]
+[ext_resource type="Resource" path="res://data/section_config.tres" id="3_section_config"]
+[ext_resource type="PackedScene" path="res://scenes/props/laser_beam.tscn" id="4_laser_beam"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
 
@@ -74,6 +77,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.45, 0)
 operation = 2
 size = Vector3(2.2, 2.6, 10.2)
 
+[node name="PartitionWest" type="CSGBox3D" parent="Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 2, -10.5)
+use_collision = true
+size = Vector3(8, 4, 1)
+material = SubResource("Mat_wall")
+
+[node name="PartitionEast" type="CSGBox3D" parent="Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 2, -10.5)
+use_collision = true
+size = Vector3(28, 4, 1)
+material = SubResource("Mat_wall")
+
 [node name="StepLow" type="CSGBox3D" parent="Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.25, -2)
 use_collision = true
@@ -132,3 +147,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.1, 12)
 
 [node name="SpawnClient" type="Marker3D" parent="SpawnPoints" groups=["spawn_points"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.1, 12)
+
+[node name="Section" type="Node3D" parent="."]
+script = ExtResource("2_section_root")
+section_id = "test_level"
+config = ExtResource("3_section_config")
+
+[node name="Obstacles" type="Node3D" parent="Section"]
+
+[node name="LaserBeam" parent="Section/Obstacles" instance=ExtResource("4_laser_beam")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -6)
