@@ -1,0 +1,22 @@
+# Export settings or the release workflow changed: build the game without releasing,
+# so a broken export is found before the next version tag.
+name: Export check
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - export_presets.cfg
+      - .github/workflows/release.yml
+      - .github/workflows/export-check.yml
+      - tools/changelog_section.sh
+
+permissions:
+  contents: write   # the called workflow declares a release job (skipped here)
+  checks: write
+  actions: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/release.yml
+    secrets: inherit

@@ -1,0 +1,113 @@
+# Builds Windows and Linux versions of the game.
+# - Tag vX.Y.Z pushed: tests → builds → GitHub Release with the builds and the
+#   matching CHANGELOG.md section as release notes. No CHANGELOG section → no release.
+# - Called from export-check.yml (export settings changed on a branch): builds only,
+#   no tests and no release — checks that the export still works.
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  GODOT_VERSION: "4.4.1"
+
+jobs:
+  tests:
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ./.github/workflows/tests.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      checks: write
+      actions: read
+
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release notes from CHANGELOG.md
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="Unreleased"
+          fi
+          bash tools/changelog_section.sh "$version" > release-notes.md
+          cat release-notes.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  build:
+    needs: notes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - preset: "Windows Desktop"
+            name: windows
+            binary: DiamondHeist.exe
+          - preset: "Linux"
+            name: linux
+            binary: DiamondHeist.x86_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch models
+        shell: pwsh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_S3_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_S3_SECRET }}
+        run: ./tools/fetch_assets.ps1 -Only assets
+
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: true
+
+      - name: Import project
+        run: godot --headless --path . --import
+
+      - name: Export ${{ matrix.preset }}
+        run: |
+          mkdir -p build/${{ matrix.name }}
+          godot --headless --path . --export-release "${{ matrix.preset }}" build/${{ matrix.name }}/${{ matrix.binary }}
+          test -s build/${{ matrix.name }}/${{ matrix.binary }}
+          ls -la build/${{ matrix.name }}
+
+      - name: Package
+        run: |
+          tag="${GITHUB_REF_NAME//\//-}"
+          cd build/${{ matrix.name }}
+          zip -r ../../DiamondHeist-${tag}-${{ matrix.name }}.zip .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.name }}
+          path: DiamondHeist-*.zip
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [tests, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Diamond Heist ${{ github.ref_name }}
+          body_path: dist/release-notes.md
+          files: dist/DiamondHeist-*.zip
+          prerelease: ${{ startsWith(github.ref_name, 'v0.') }}
