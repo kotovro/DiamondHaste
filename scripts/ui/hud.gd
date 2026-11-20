@@ -1,7 +1,9 @@
 class_name Hud
 extends Control
 ## HUD: прочность алмаза, выносливость локального игрока и лента событий.
-## Обновляется только по сигналам: Main подключает алмаз (bind_diamond) и локального игрока (bind_player).
+## Обновляется только по сигналам: Main подключает алмаз (bind_diamond), локального игрока
+## (bind_player) и секцию (bind_section): в конце паузы тревоги экран затемняется, после
+## сброса — проявляется.
 
 ## Ниже этой доли выносливости полоска краснеет и подсказка предупреждает.
 const LOW_STAMINA := 0.25
@@ -14,14 +16,19 @@ const LOW_COLOR := Color(1, 0.35, 0.3)
 @onready var stamina_bar: ProgressBar = %StaminaBar
 @onready var stamina_hint: Label = %StaminaHint
 @onready var event_label: Label = %EventLabel
+@onready var reset_fade: ColorRect = %ResetFade
 
 var _player: Player
 var _event_tween: Tween
+var _section: SectionRoot
+var _fade_tween: Tween
 
 
 func _ready() -> void:
 	stamina_panel.hide()
 	event_label.text = ""
+	reset_fade.modulate.a = 0.0
+	reset_fade.hide()
 
 
 func bind_diamond(diamond: Diamond) -> void:
@@ -41,6 +48,12 @@ func bind_player(player: Player) -> void:
 	player.carry.stamina.changed.connect(_on_stamina_changed)
 	player.carry.carrying_changed.connect(_on_carrying_changed)
 	_refresh_stamina()
+
+
+func bind_section(section: SectionRoot) -> void:
+	_section = section
+	section.alarm_started.connect(_on_alarm_started)
+	section.section_reset.connect(_on_section_reset)
 
 
 ## Подсказка под полоской выносливости. Чистая функция — покрыта tests/unit/test_hud.gd.
@@ -92,6 +105,28 @@ func _refresh_stamina() -> void:
 	stamina_bar.modulate = LOW_COLOR if ratio < LOW_STAMINA else NORMAL_COLOR
 	var min_ratio := carry.config.min_stamina_to_pick_up / carry.config.max_stamina
 	stamina_hint.text = stamina_hint_text(carrying, ratio, min_ratio)
+
+
+## Затемнение начинается так, чтобы закончиться к сбросу.
+func _on_alarm_started(_cause: int, _actor_id: int) -> void:
+	var fade_seconds := _section.config.reset_fade_seconds
+	var wait := maxf(0.0, _section.config.reset_delay - fade_seconds)
+	_start_fade()
+	reset_fade.show()
+	_fade_tween.tween_interval(wait)
+	_fade_tween.tween_property(reset_fade, "modulate:a", 1.0, fade_seconds)
+
+
+func _on_section_reset(_section_id: String) -> void:
+	_start_fade()
+	_fade_tween.tween_property(reset_fade, "modulate:a", 0.0, _section.config.reset_fade_seconds)
+	_fade_tween.tween_callback(reset_fade.hide)
+
+
+func _start_fade() -> void:
+	if _fade_tween:
+		_fade_tween.kill()
+	_fade_tween = create_tween()
 
 
 func _show_event(text: String) -> void:

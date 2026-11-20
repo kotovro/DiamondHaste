@@ -1,0 +1,67 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/obstacles/laser_beam.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/laser_config.tres" id="2_config"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_beam"]
+top_radius = 0.025
+bottom_radius = 0.025
+height = 2.2
+radial_segments = 12
+rings = 1
+
+[sub_resource type="BoxMesh" id="BoxMesh_emitter"]
+size = Vector3(0.12, 0.2, 0.12)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_touch"]
+size = Vector3(2.2, 0.05, 0.05)
+
+[sub_resource type="SphereMesh" id="SphereMesh_spark"]
+radius = 0.08
+height = 0.16
+radial_segments = 8
+rings = 4
+
+[node name="LaserBeam" type="Node3D"]
+script = ExtResource("1_script")
+config = ExtResource("2_config")
+
+[node name="Beam" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.4, 0)
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_beam")
+
+[node name="EmitterA" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1, 0.4, 0)
+mesh = SubResource("BoxMesh_emitter")
+
+[node name="EmitterB" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1, 0.4, 0)
+mesh = SubResource("BoxMesh_emitter")
+
+[node name="TouchArea" type="Area3D" parent="."]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 6
+monitorable = false
+
+[node name="TouchShape" type="CollisionShape3D" parent="TouchArea"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("BoxShape3D_touch")
+
+[node name="AlarmLight" type="OmniLight3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+light_color = Color(1, 0.12, 0.1, 1)
+light_energy = 0.4
+omni_range = 4.0
+
+[node name="Spark" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+visible = false
+cast_shadow = 0
+mesh = SubResource("SphereMesh_spark")

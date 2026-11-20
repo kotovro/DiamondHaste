@@ -4,7 +4,9 @@ extends CharacterBody3D
 ##
 ## Имя узла = peer id владельца. Владелец управляет персонажем локально,
 ## MultiplayerSynchronizer рассылает позицию и поворот модели остальным.
-## Перенос алмаза — компонент Carry (PlayerCarry).
+## Перенос алмаза — компонент Carry (PlayerCarry), «поимка» — CaughtFeedback.
+## На время тревоги секции управление блокируется (set_controls_locked): ввод движения
+## и прыжок не действуют, гравитация и камера работают.
 
 const PITCH_MIN := deg_to_rad(-70.0)
 const PITCH_MAX := deg_to_rad(25.0)
@@ -25,6 +27,9 @@ const CLIENT_COLOR := Color(0.25, 0.55, 0.95)
 @onready var spring_arm: SpringArm3D = $CameraPivot/SpringArm3D
 @onready var camera: Camera3D = $CameraPivot/SpringArm3D/Camera3D
 @onready var carry: PlayerCarry = $Carry
+@onready var caught_feedback: CaughtFeedback = $CaughtFeedback
+
+var _controls_locked := false
 
 
 func _enter_tree() -> void:
@@ -75,11 +80,13 @@ func _physics_process(delta: float) -> void:
 
 	if not is_on_floor():
 		velocity += get_gravity() * delta
-	elif Input.is_action_just_pressed("jump") and carry.can_jump():
+	elif not _controls_locked and Input.is_action_just_pressed("jump") and carry.can_jump():
 		velocity.y = movement.jump_velocity
 
 	# Движение относительно камеры: CameraPivot вращается только по Y.
-	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input := Vector2.ZERO
+	if not _controls_locked:
+		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := camera_pivot.global_basis * Vector3(input.x, 0.0, input.y)
 	direction.y = 0.0
 	direction = direction.normalized()
@@ -117,15 +124,22 @@ func facing_direction() -> Vector3:
 	return forward.normalized()
 
 
-## Вернуть персонажа на точку старта. Вызывает хост: respawn.rpc().
-@rpc("any_peer", "call_local", "reliable")
+## Блок управления на время тревоги секции (вызывает SectionRoot у своих персонажей).
+func set_controls_locked(locked: bool) -> void:
+	_controls_locked = locked
+
+
+func is_controls_locked() -> bool:
+	return _controls_locked
+
+
+## Вернуть персонажа на точку появления. Не RPC (T-19): каждая машина переносит своего
+## персонажа по событию section_reset; чужого персонажа вызов не трогает.
 func respawn() -> void:
-	var sender := multiplayer.get_remote_sender_id()
-	if sender != 0 and sender != 1:
+	if not is_multiplayer_authority():
 		return
-	if is_multiplayer_authority():
-		velocity = Vector3.ZERO
-		_move_to_spawn()
+	velocity = Vector3.ZERO
+	_move_to_spawn()
 
 
 func _move_to_spawn() -> void:
