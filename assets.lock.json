@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "bucket": "thiefs-diamonds",
+  "endpoint": "https://storage.yandexcloud.net",
+  "files": {
+    "art/blender/diamond.blend": { "sha256": "62b84e5df0556842810ebe96b5d9833903a661bf2804b57634125e1124437c17", "size": 61030 },
+    "assets/models/diamond.glb": { "sha256": "e1eae7a21e8ae605634ef12e5f10338d02d0fa9260fcd1ac9da0fec9ed628163", "size": 8440 }
+  }
+}

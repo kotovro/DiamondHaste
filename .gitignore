@@ -38,3 +38,5 @@ desktop.ini
 
 # GdUnit4 test reports
 /reports/
+
+*.download
