@@ -6,7 +6,8 @@ extends Node
 ##
 ## Числа — заглушки-константы: визуальный стиль не выбран (DESIGN.md, вопрос 7).
 
-## Наклон модели в позе поимки, рад.
+## Наклон модели в позе поимки, рад. Наклоняется player.pose — нереплицируемый узел
+## (Body:rotation реплицирует синхронизатор), поэтому поза задаётся только событием.
 const TILT := deg_to_rad(28.0)
 ## Цвет мигания задевшего персонажа.
 const BLINK_COLOR := Color(1.0, 0.9, 0.2)
@@ -16,7 +17,7 @@ const BLINK_HZ := 5.0
 var _section: SectionRoot
 var _showing := false
 var _blink: Tween
-var _body_rotation_z := 0.0
+var _pose_rotation_z := 0.0
 var _color := Color.WHITE
 
 @onready var player: Player = get_parent()
@@ -46,8 +47,8 @@ func _on_alarm_started(cause: int, actor_id: int) -> void:
 	if _showing:
 		return
 	_showing = true
-	_body_rotation_z = player.body.rotation.z
-	player.body.rotation.z = _body_rotation_z + TILT
+	_pose_rotation_z = player.pose.rotation.z
+	player.pose.rotation.z = _pose_rotation_z + TILT
 	var material := player.body_mesh.material_override as StandardMaterial3D
 	if material:
 		_color = material.albedo_color
@@ -64,7 +65,7 @@ func _on_section_reset(_section_id: String) -> void:
 	if _blink:
 		_blink.kill()
 		_blink = null
-	player.body.rotation.z = _body_rotation_z
+	player.pose.rotation.z = _pose_rotation_z
 	var material := player.body_mesh.material_override as StandardMaterial3D
 	if material:
 		material.albedo_color = _color

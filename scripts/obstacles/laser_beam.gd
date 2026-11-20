@@ -198,7 +198,7 @@ func _closest_on_beam(point: Vector3) -> Vector3:
 
 
 func _has_player(peer_id: int) -> bool:
-	for node in get_tree().get_nodes_in_group("players"):
+	for node: Node in get_tree().get_nodes_in_group("players"):
 		if node is Player and node.get_multiplayer_authority() == peer_id:
 			return true
 	return false

@@ -20,7 +20,9 @@ const CLIENT_COLOR := Color(0.25, 0.55, 0.95)
 @export var movement: MovementConfig
 
 @onready var body: Node3D = $Body
-@onready var body_mesh: MeshInstance3D = $Body/Mesh
+## Визуальная поза модели: локальна на каждом пире, синхронизатор её не трогает.
+@onready var pose: Node3D = $Body/Pose
+@onready var body_mesh: MeshInstance3D = $Body/Pose/Mesh
 @onready var hold_point: Marker3D = $Body/HoldPoint
 @onready var name_label: Label3D = $NameLabel
 @onready var camera_pivot: Node3D = $CameraPivot

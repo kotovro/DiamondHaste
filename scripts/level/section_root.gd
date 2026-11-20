@@ -40,7 +40,7 @@ func _ready() -> void:
 	_reset_timer.one_shot = true
 	_reset_timer.timeout.connect(_on_reset_timer_timeout)
 	add_child(_reset_timer)
-	for node in find_children("*", "", true, false):
+	for node: Node in find_children("*", "", true, false):
 		if node.is_in_group("obstacles"):
 			bind_obstacle(node)
 	multiplayer.peer_connected.connect(_on_peer_connected)
@@ -143,8 +143,8 @@ func _set_obstacles_armed(armed: bool) -> void:
 ## Персонажи, которыми управляет эта машина.
 func _local_players() -> Array[Player]:
 	var result: Array[Player] = []
-	for node in get_tree().get_nodes_in_group("players"):
+	for node: Node in get_tree().get_nodes_in_group("players"):
 		if node is Player and is_instance_valid(node) and not node.is_queued_for_deletion() \
 				and node.is_multiplayer_authority():
-			result.append(node)
+			result.append(node as Player)
 	return result

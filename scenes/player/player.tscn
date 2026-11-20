@@ -40,11 +40,13 @@ shape = SubResource("CapsuleShape3D_body")
 
 [node name="Body" type="Node3D" parent="."]
 
-[node name="Mesh" type="MeshInstance3D" parent="Body"]
+[node name="Pose" type="Node3D" parent="Body"]
+
+[node name="Mesh" type="MeshInstance3D" parent="Body/Pose"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 mesh = SubResource("CapsuleMesh_body")
 
-[node name="Nose" type="MeshInstance3D" parent="Body"]
+[node name="Nose" type="MeshInstance3D" parent="Body/Pose"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, -0.4)
 mesh = SubResource("BoxMesh_nose")
 
