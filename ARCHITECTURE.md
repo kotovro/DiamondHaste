@@ -110,4 +110,4 @@
 - Поведение со сценой и физикой — `tests/integration/`.
 - Проверки содержимого (состав секций, конфиги препятствий, ключи локализации, таблица лицензий) — тоже тесты.
 - Запуск: `tools\run_tests.cmd` (импорт + все тесты + проверка ошибок скриптов); один файл или папка — `tools\run_tests.cmd res://tests/unit/test_stamina.gd`. Отчёты — в `reports/` (не в git). Изменение не готово, пока тесты не зелёные. Порядок работы с ветками — `AGENTS.md`.
-- CI: `.github/workflows/tests.yml` гоняет те же тесты через `gdUnit4-action` на каждый push в `main`/`dev`/`feature/**` и на pull request.
+- CI: `.github/workflows/tests.yml` гоняет те же тесты через `gdUnit4-action` на каждый push в `main`/`dev`/`feature/**`/`feat/**` и на pull request.
