@@ -1,7 +1,8 @@
 @echo off
 rem Launches two game windows on one PC: host on the left, client on the right.
-rem Adjust the Godot path for your machine.
-set GODOT=C:\Repositories\Godot_v4.4.1-stable_mono_win64\Godot_v4.4.1-stable_mono_win64.exe
+rem Godot path: GODOT_BIN environment variable, otherwise the default below.
+set GODOT=%GODOT_BIN%
+if "%GODOT%"=="" set GODOT=C:\Repositories\Godot_v4.4.1-stable_mono_win64\Godot_v4.4.1-stable_mono_win64.exe
 
 cd /d "%~dp0.."
 start "Diamond Heist - Host" "%GODOT%" --path . --resolution 960x540 --position 0,60 -- --host

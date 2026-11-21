@@ -4,9 +4,10 @@ name: Tests
 
 on:
   push:
-    branches: [main, dev, "feat/**"]
+    branches: [main, dev, "feat/**", "feature/**"]
   pull_request:
     branches: [main, dev]
+  workflow_call:   # release.yml runs the tests before publishing a release
 
 permissions:
   contents: read
