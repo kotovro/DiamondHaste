@@ -15,7 +15,11 @@
 
 | Файл | Система |
 |---|---|
-| `docs/tech/obstacles.md` | препятствия, касание, сброс секции (минимум F-001) |
+| `docs/tech/obstacles.md` | препятствия, касание, сброс секции (минимум F-001; уточнения DIA-5 — раздел 6) |
+| `docs/tech/game-flow.md` | состояния сессии, уровня и секции; чекпоинт; подключение и отключение (DIA-5) |
+| `docs/tech/saves.md` | формат сохранения, прогресс у обоих, выбор стартового чекпоинта (DIA-5) |
+| `docs/tech/components.md` | правило контрактов, каталог компонентов: прочность, движение по пути (DIA-5) |
+| `docs/tech/latency.md` | имитация задержки сети и замер пинга (DIA-5) |
 
 Сеть, алмаз, персонаж пока описаны только в `ARCHITECTURE.md` и коде.
 
@@ -44,10 +48,31 @@
 | T-19 | `Player.respawn` перестаёт быть RPC: каждая машина переносит своего персонажа по событию `section_reset` | принято (H2 2026-11-20) | `docs/tech/obstacles.md` | F-001 |
 | T-20 | На время тревоги управление своим персонажем блокируется (`SectionConfig.lock_controls_during_alarm`, по умолчанию да; ощущение — H3) | принято (H2 2026-11-20) | `docs/tech/obstacles.md` | F-001 |
 | T-21 | Раскладка шин `default_bus_layout.tres`: Master, Music, SFX, UI, Ambience (по `docs/audio/SOUND.md`); сейчас есть только Master | принято (H2 2026-11-20) | `docs/audio/SOUND.md` «Шины» | F-001 |
+| T-22 | Сессия: логика `SessionFlow` + узел `Main/Session`, без автозагрузки; выход в меню из любого состояния = закрыть сеть и перезагрузить `Main`; экран выбора у хоста — оверлей, подсостояние напарника | предложено | `game-flow.md` §1–2 | DIA-5 |
+| T-23 | Уровень: `LevelRoot` + логика `LevelFlow` (текущий чекпоинт, тревога, финал); вход сброса и RPC тревоги переезжают из `SectionRoot` в `LevelRoot` — правило T-17 то же, место новое | предложено | `game-flow.md` §3; `obstacles.md` §6 | DIA-5 |
+| T-24 | Чекпоинт: зона ловит тело носильщика, судит машина носильщика (`request_report_checkpoint`), хост проверяет носильщика, порядок, тревогу, допуск; событие `_apply_checkpoint_reached`, финал — флаг чекпоинта | предложено | `game-flow.md` §3 | DIA-5 |
+| T-25 | Сброс пересоздаёт `Content` текущей секции; старт с чекпоинта (`_apply_level_started`) — все секции. Заменяет временный T-18, реализует T-14 | предложено | `game-flow.md` §3; `obstacles.md` §6 | DIA-5 |
+| T-26 | Часы секции `SectionClock`: идут в `ACTIVE`, стоят в тревоге, с нуля при пересоздании `Content`; подключившийся получает их в полном состоянии | предложено | `components.md` §4 | DIA-5 |
+| T-27 | Вход в игру: авторизация `SceneMultiplayer` в `Network` (версия протокола, «заполнено», «закончилась»); `Session.request_join(farthest)`; персонаж второго игрока спавнится после выбора чекпоинта | предложено | `game-flow.md` §4–5 | DIA-5 |
+| T-28 | Конец сессии без смены хоста (decision-05 A): `Network.end_session` → `_apply_host_ended` → закрытие; причина — `Network.last_end_reason`, переживает перезагрузку `Main` | предложено | `game-flow.md` §5 | DIA-5 |
+| T-29 | Сохранение, этап 1: `user://progress.json`, JSON `{format: 1, farthest_checkpoint, finished}`; запись через `.tmp` + переименование, восстановление из `.tmp`; логика `ProgressRecord`/`SaveFormat`/`ProgressRules`/`CheckpointRoute`, узел `ProgressStore`; `--profile` для двух окон | предложено (меняет формат сохранения → H2) | `saves.md` §1–4 | DIA-5 |
+| T-30 | Прогресс у обоих: каждая машина пишет свой файл по событию хоста; знак «чекпоинт достигнут» — после записи; выбор старта — хост (7.1 A), до дальнего из двух (7.2 B), засчёт сразу (7.3 A) | предложено | `saves.md` §4–5 | DIA-5 |
+| T-31 | Интерфейс = таблица контракта + контрактный тест по всем реализациям; без общего предка узлов и стратегий; `has_method` в штатном коде не используется | предложено (обобщает T-16) | `components.md` §1–2 | DIA-5 |
+| T-32 | Прочность — компонент `DurabilityComponent` + `DurabilityConfig`, стадии `INTACT/DAMAGED/CRITICAL/BROKEN` по порогам; RPC прочности переезжают из `Diamond`, сигналы алмаза остаются; учебный ящик в тестовой секции | предложено | `components.md` §3 | DIA-5 |
+| T-33 | Движение — компонент `PathMover` + логика `PathMotion` от часов секции, без синхронизатора; общего предка `Movable` нет | предложено | `components.md` §4 | DIA-5 |
+| T-34 | Полное состояние догоняет и вид: `full_state_applied`, длящиеся реакции читают состояние; `LaserBeam._apply_full_state` (ревью F-001 № 4) | предложено | `game-flow.md` §6; `obstacles.md` §6 | DIA-5 |
+| T-35 | `Consequence.NONE`: препятствие перевзводит себя само через `rearm_delay` (`_apply_rearmed`); до первого применения `NONE` запрещён контент-тестом (ревью F-001 № 5) | предложено | `obstacles.md` §6 | DIA-5 |
+| T-36 | Допуск правдоподобия отчётов о касании и чекпоинте: позиция отправителя не дальше `report_tolerance` (ревью F-001 № 8) | предложено | `obstacles.md` §6 | DIA-5 |
+| T-37 | Подбираемые числа обратной связи — в конфигах: `CaughtFeedbackConfig` (ревью F-001 № 7) | предложено | `components.md` §5 | DIA-5 |
+| T-38 | `LatencySimulator`: стратегии `NoLatency`/`ProxyLatency`/`PeerLatency` (`LagPeer extends MultiplayerPeerExtension`)/`SteamLatency`, выбор в `Network` аргументами, только отладочная сборка; пинг — RPC `Network._ping/_pong`; оверлей; автотест (ревью F-001 № 9) | предложено | `latency.md` | DIA-5 |
+| T-39 | Локализация: ключи и `tr()`, `locale/ru.po`, `project.godot`: `internationalization/locale/translations` и `fallback = "ru"`; контент-тест ключей | предложено (меняет `project.godot` → H2) | `plan.md` DIA-5, «DIA-10» | DIA-5, расхождение журнала |
+| T-40 | `debug/gdscript/warnings/untyped_declaration = 2` (ошибка), `exclude_addons` остаётся `true`; сначала типизация кода и тестов | предложено (меняет `project.godot` → H2) | `plan.md` DIA-5, «DIA-10» | DIA-5, расхождение журнала |
+| T-41 | Убрать `ssao_enabled` из `test_level.tscn` (в Compatibility не работает) | предложено | `plan.md` DIA-5, «DIA-10» | DIA-5, расхождение журнала |
 
 ## Расхождения, найденные при заведении журнала
 
-Не блокируют F-001, задачи владельцу на будущее:
+Не блокируют F-001, задачи владельцу на будущее. Решения предложены в DIA-5: первое — T-40,
+второе — T-39, третье — T-41.
 
 - `ARCHITECTURE.md` («GDScript») говорит, что `untyped_declaration` поднято до ошибки, а в
   `project.godot` этой настройки нет.
