@@ -86,7 +86,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not is_multiplayer_authority():
+	if not is_multiplayer_authority() or player.is_controls_locked():
 		return
 	if event.is_action_pressed("interact"):
 		if _carrying:

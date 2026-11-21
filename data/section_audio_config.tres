@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="SectionAudioConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/section_audio_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+siren_volume_db = -4.0
+reset_volume_db = 0.0

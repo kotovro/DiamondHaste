@@ -19,6 +19,7 @@ const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 @onready var status_label: Label = $UI/HUD/Status
 
 var diamond: Diamond
+var section: SectionRoot
 
 
 func _ready() -> void:
@@ -35,11 +36,16 @@ func _ready() -> void:
 	menu.host_requested.connect(_on_host_requested)
 	menu.join_requested.connect(_on_join_requested)
 
-	# Main — точка сборки: связывает алмаз, персонажей и HUD сигналами.
+	# Main — точка сборки: связывает алмаз, секцию, персонажей и HUD сигналами.
+	# Сброс (в том числе от разрушения алмаза) ведёт секция (T-17).
 	diamond = get_tree().get_first_node_in_group("diamond") as Diamond
 	if diamond:
-		diamond.destroyed.connect(_on_diamond_destroyed)
 		hud.bind_diamond(diamond)
+	section = get_tree().get_first_node_in_group("sections") as SectionRoot
+	if section:
+		if diamond:
+			section.bind_diamond(diamond)
+		hud.bind_section(section)
 	players.child_entered_tree.connect(_on_player_entered)
 
 	_handle_command_line.call_deferred()
@@ -54,20 +60,10 @@ func _on_player_entered(node: Node) -> void:
 func _on_player_ready(player: Player) -> void:
 	if diamond:
 		player.carry.bind_diamond(diamond)
+	if section:
+		player.caught_feedback.bind_section(section)
 	if player.is_multiplayer_authority():
 		hud.bind_player(player)
-
-
-## Алмаз разрушен: секция начинается заново. Пока чекпоинтов нет (пункт 6 плана) —
-## алмаз возвращается на постамент, игроки — на точки старта.
-func _on_diamond_destroyed() -> void:
-	if not multiplayer.is_server():
-		return
-	print("[Main] Алмаз разрушен — перезапуск секции")
-	diamond.reset_to_start.call_deferred()
-	for player in players.get_children():
-		if player is Player:
-			player.respawn.rpc()
 
 
 ## Аргументы командной строки применяются один раз за запуск, а не при каждой перезагрузке сцены

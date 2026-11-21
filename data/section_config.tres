@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SectionConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/level/section_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+reset_delay = 1.5
+lock_controls_during_alarm = true
+reset_fade_seconds = 0.4
