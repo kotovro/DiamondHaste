@@ -38,6 +38,17 @@ tools\run_local_coop.cmd
 
 Если Godot лежит не по пути из скрипта, задайте переменную `GODOT_BIN`.
 
+С задержкой сети (пинг в миллисекундах; нужен Python 3):
+
+```bat
+tools\run_local_coop.cmd 150
+```
+
+Клиент подключается через `tools\lag_proxy.py` (порт 24681), который придерживает пакеты
+на половину пинга в каждую сторону. Окно посредника закрывается вручную. Свои параметры:
+`python tools\lag_proxy.py --delay 75 --jitter 10 --loss 1`, проверка без игры —
+`python tools\lag_proxy.py --self-test`.
+
 Управление: WASD — ходьба, мышь — камера, пробел — прыжок, E — взять или положить алмаз,
 Q — передать, F — бросить, Esc — отпустить курсор.
 
@@ -53,6 +64,8 @@ Q — передать, F — бросить, Esc — отпустить кур�
 - Тесты — GdUnit4 (`addons/gdUnit4`), в `tests/unit` и `tests/integration`.
   CI гоняет их на каждый push и pull request (`.github/workflows/tests.yml`).
 - Правила кода — [`ARCHITECTURE.md`](ARCHITECTURE.md).
+- Справочник классов Godot именно нашей версии: `tools\gen_class_ref.cmd` выгружает его в
+  `.godot\class_ref\` (XML по классу на файл, в git не попадает).
 - Как идёт работа над фичами (роли агентов, артефакты, решения владельца) —
   [`AGENTS.md`](AGENTS.md) и [`docs/agents/TEAM.md`](docs/agents/TEAM.md).
   Артефакты фич — `docs/work/<ID>-<slug>/`.
