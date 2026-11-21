@@ -1,6 +1,6 @@
 # Сохранения и прогресс — техзадание
 
-Статус: предложено (DIA-5, ждёт H2). Журнал: T-29, T-30 в `00-index.md`.
+Статус: принято (H2 2026-11-21, DIA-5). Журнал: T-29, T-30 в `00-index.md`.
 Карточка: `docs/work/DIA-5-architecture-pillars/card.md` (decision-02 B, 06 A, 07: 7.1 A,
 7.2 B, 7.3 A; Д8, Д13, Д15, Д16). Правила — `ARCHITECTURE.md`, «Данные игрока».
 
@@ -107,10 +107,20 @@ ID — `SectionRoot.section_id` (стабильная строка, T-14). Ср�
   **Знак «чекпоинт достигнут» подписан на `checkpoint_recorded`, а не на
   `checkpoint_reached`** — так «знак появился» значит «запись сделана или не нужна» (Д9,
   К27). Знак одинаков у обоих, `record_changed` на него не влияет (решение владельца).
+  Знак показывает `Hud.show_checkpoint_sign(checkpoint_id: String) -> void` на
+  `CheckpointConfig.sign_seconds`; источник подключает `Main` (`bind_*`). **По задачам:** в
+  DIA-12 (`ProgressStore` ещё нет) `Main` подключает знак к `LevelRoot.checkpoint_reached`,
+  тест — «знак у обоих по событию уровня»; в DIA-7 `Main` переключает его на
+  `ProgressStore.checkpoint_recorded`, тест — порядок «событие → запись → знак» (К27).
+  `Hud` при этом не меняется. Победный сигнал — на `checkpoint_reached` (`game-flow.md` §7).
 - `LevelRoot.finale_reached` → `mark_finished` → запись.
-- `Session.session_started(start_id)` → `record_reached(start_id)` — **7.3 A: засчитывается
-  сразу при старте** тому, кто стартовал дальше своего рекорда, и хосту тоже (при 7.2 B хост
-  может стартовать дальше своего рекорда).
+- `Session.session_started(start_id)` → `record_reached(start_id)` → **запись файла сразу, в
+  обработчике события**, если изменилась — **7.3 A: засчитывается сразу при старте**, до
+  первого чекпоинта сессии; кто уйдёт или вылетит сразу после старта, сохраняет её (К54,
+  Д16). Делают **обе машины**: `_apply_session_started` — `call_local`, событие
+  `session_started` есть и у хоста. Касается любого, кто стартовал дальше своего рекорда, —
+  второго игрока и хоста, который по 7.2 B выбрал дальний чекпоинт напарника. Знака на
+  старте нет: `checkpoint_recorded` здесь не испускается.
 - Выход, отключение, вылет между чекпоинтами ничего не пишут (К22).
 
 **Что знает хост о втором игроке.** Только `farthest_id` и `finished` из
@@ -127,7 +137,7 @@ ID — `SectionRoot.section_id` (стабильная строка, T-14). Ср�
       сессия дошла до нового чекпоинта, пока выбор открыт (Д20) ─► _apply_start_options(обновлено)
       подтверждение ─► is_valid_start? ─► _apply_session_started(start_id) ─► оба
       start_id == текущий: только спавн (К51); иначе reset_to алмаза + _apply_level_started + спавн (К52)
-оба:  session_started ─► record_reached(start_id) (7.3 A) ─► экран закрыт
+оба (хост и второй): session_started ─► record_reached(start_id) ─► запись файла сразу (7.3 A, К54) ─► экран закрыт
 ```
 
 Экран выбора показывает (данные — из `_apply_start_options`, тексты — ключи `tr()`):

@@ -1,6 +1,6 @@
 # Имитация задержки сети и замер пинга — техзадание
 
-Статус: предложено (DIA-5 / DIA-9, ждёт H2). Журнал: T-38 в `00-index.md`.
+Статус: принято (H2 2026-11-21, DIA-5; реализация — DIA-9). Журнал: T-38 в `00-index.md`.
 Закрывает замечание ревью F-001 № 9 (`docs/work/F-001-first-obstacle/review.md`).
 Нужна до H3 по совместному несению и К35 DIA-14 («150 мс в двух окнах»).
 
@@ -87,7 +87,8 @@ GDExtension; скрипт реализует `*_script`. Значит, обёр�
 
 - `Network._ping(sent_usec: int)` — `any_peer`, `call_remote`, `unreliable`; получатель сразу
   отвечает `Network._pong(sent_usec: int)` — `any_peer`, `call_remote`, `unreliable`.
-  Пути совпадают у всех (`/root/Network`, автозагрузка).
+  Пути совпадают у всех (`/root/Network`, автозагрузка; в обвязке `NetPair` — `Network`
+  под каждым корнем, ниже).
 - Раз в `PING_INTERVAL` (1 с, `Timer`, только когда онлайн) клиент шлёт `_ping`; по `_pong`
   — `ping_measured(rtt_ms: float)`, скользящее среднее `get_ping_ms() -> float`.
 - **Оверлей** `NetOverlay` (`scenes/ui/net_overlay.tscn`, только отладочная сборка): пинг,
@@ -100,6 +101,25 @@ GDExtension; скрипт реализует `*_script`. Значит, обёр�
   < 40 мс; порядок 100 надёжных RPC сохранён; отключение не теряет `peer_disconnected`.
   Та же обвязка (`tests/support/net_pair.gd`) нужна для тестов входа (`game-flow.md`,
   раздел 5). `lag_proxy.py --self-test` остаётся проверкой посредника.
+
+**Обвязка `NetPair` и автозагрузка `Network`.** `set_multiplayer(api, root_path)` отдаёт
+свой `SceneMultiplayer` только поддереву `root_path`. Автозагрузка `/root/Network` лежит вне
+обоих корней и работает на общем API дерева, поэтому через неё RPC `_ping/_pong`, авторизация
+и конец сессии двух пиров в одном процессе не пойдут. Правило:
+- `NetPair` (`tests/support/net_pair.gd`) создаёт два корня `/root/NetPairHost` и
+  `/root/NetPairClient`, вызывает `set_multiplayer(api, корень)` для каждого и **после
+  этого** кладёт под каждый корень свой экземпляр `scripts/net/network.gd` с именем
+  `Network`. Пути RPC считаются от `root_path`, поэтому у обоих пиров это `Network` — они
+  совпадают. Автозагрузка в таких тестах не трогается и остаётся offline.
+- `Network` берёт API только через свойство узла `multiplayer` (так сейчас: подписки в
+  `_ready`, `multiplayer.multiplayer_peer` в `host/join/close`), не через
+  `get_tree().get_multiplayer()` без пути и не по абсолютному пути `/root/Network`.
+- Узлы игры не обращаются к глобальному имени `Network`: его знает только точка сборки
+  `Main` (`var network: Node`, если не задан — автозагрузка) и передаёт остальным
+  (`Session`, `NetOverlay`) через `bind_network(network: Node) -> void`. Тест под `NetPair`
+  собирает то же сам: свой `Network` своего корня → `bind_network`.
+- Тесты, которым сеть не нужна (`test_delay_queue`; в `test_latency_contract` — методы
+  стратегий `client_port`/`wrap` без соединения), `NetPair` и `Network` не используют.
 
 ## 5. Как пользоваться (для `qa-manual.md`)
 

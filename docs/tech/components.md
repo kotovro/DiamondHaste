@@ -1,6 +1,6 @@
 # Компоненты и контракты — техзадание
 
-Статус: предложено (DIA-5, ждёт H2). Журнал: T-31…T-33, T-37 в `00-index.md`.
+Статус: принято (H2 2026-11-21, DIA-5). Журнал: T-31…T-33, T-37 в `00-index.md`.
 Карточка: `docs/work/DIA-5-architecture-pillars/card.md` (decision-03 B, 04 A; Д10, Д11).
 Правила — `ARCHITECTURE.md`, «Композиция»; T-02, T-16.
 
@@ -34,7 +34,7 @@
 | Модель совместного несения A/B | стратегия в `PlayerCarry`/`Diamond` | `RigidCarry`, `BalanceCarry` | свои | `test_coop_carry_contract.gd` | шаг 3 плана, не DIA-5 |
 | Поза поимки | `CaughtFeedback` (`Node`) у `Player` | — | `CaughtFeedbackConfig` (новый, № 7) | — | есть, конфиг — DIA-10 |
 | **Прочность** | `DurabilityComponent` (`Node`) | `Durability` (+ стадии) | `DurabilityConfig` (новый) | `test_durability_contract.gd` (алмаз, учебный ящик) | новый, DIA-13 |
-| **Движение по пути** | `PathMover` (`Node`) | `PathMotion` | `PathMoverConfig` (новый) | `test_path_mover.gd` | новый, DIA-14 |
+| **Движение по пути** | `PathMover` (`Node`) | `PathMotion` | `PathMoverConfig` (новый) | — (одна реализация); логика — `test_path_motion.gd`, узел на луче — `test_moving_laser.gd` | новый, DIA-14 |
 | **Часы секции** | `SectionRoot` | `SectionClock` | — | `test_section_clock.gd` | новый, DIA-14 |
 | Имитация задержки | стратегии в `Network` | — | — | `test_latency_contract.gd` | новый, DIA-9 (`latency.md`) |
 | Звук объекта | `*Audio` (`Node`) | — | `*AudioConfig` | `test_*_audio.gd` | есть |
